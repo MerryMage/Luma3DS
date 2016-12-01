@@ -731,6 +731,26 @@ void patchCode(u64 progId, u16 progVer, u8 *code, u32 size)
            ) != 3) goto error;
     }
 
+    else if(progId == 0x0004013000001A02LL) // DSP
+    {
+        u32* code32 = (u32*)code;
+        u32 size32 = size / 4;
+
+        for (u32 i = 0; i < size32-2; i++) {
+            if ((code32[i] & 0xFE000000) != 0xFA000000) // blx
+                continue;
+
+            if (code32[i+1] != 0xE3500000) // cmp r0, #0
+                continue;
+
+            if ((code32[i+2] & 0xFF7FF000) != 0x151F0000) // ldrne r0, =0xD8E0A7EA
+                continue;
+
+            code32[i] = 0xE3A00000;
+            break;
+        }
+    }
+
     if(CONFIG(PATCHGAMES) && (u32)((progId >> 0x20) & 0xFFFFFFEDULL) == 0x00040000)
     {
         u8 regionId = 0xFF,
